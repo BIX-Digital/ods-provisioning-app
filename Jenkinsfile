@@ -1,30 +1,23 @@
-def odsImageTag = env.ODS_IMAGE_TAG ?: 'latest'
-def odsGitRef = env.ODS_GIT_REF ?: 'production'
-def final projectId = 'prov'
+/* generated jenkins file used for building and deploying prov-app in projects prova */
+def final projectId = 'prova'
 def final componentId = 'prov-app'
 def final credentialsId = "${projectId}-cd-cd-user-with-password"
-def sharedLibraryRepository
 def dockerRegistry
 node {
-  sharedLibraryRepository = env.SHARED_LIBRARY_REPOSITORY
   dockerRegistry = env.DOCKER_REGISTRY
 }
 
-library identifier: "ods-library@${odsGitRef}", retriever: modernSCM(
-  [$class: 'GitSCMSource',
-   remote: sharedLibraryRepository,
-   credentialsId: credentialsId])
+@Library('ods-jenkins-shared-library@2.x') _
 
-// See readme of shared library for usage and customization.
+// See https://www.opendevstack.org/ods-documentation/ods-jenkins-shared-library/latest/index.html for usage and customization.
 odsPipeline(
-  image: "${dockerRegistry}/cd/jenkins-slave-maven:${odsImageTag}",
+  image: "${dockerRegistry}/cd/jenkins-slave-maven:2.x",
   projectId: projectId,
   componentId: componentId,
   branchToEnvironmentMapping: [
-    'production': 'test',
+    'master': 'test',
     '*': 'dev'
-  ],
-  sonarQubeBranch: '*'
+  ]
 ) { context ->
   stageBuild(context)
   stageScanForSonarqube(context)
@@ -39,12 +32,11 @@ def stageBuild(def context) {
   if (springBootEnv.contains('-dev')) {
     springBootEnv = 'dev'
   }
-  stage('Build') {
+  stage('Build and Unit Test') {
     sh 'echo ${APP_DNS}'
     sh 'openssl s_client -showcerts -connect ${APP_DNS}:443 < /dev/null | openssl x509 -outform DER > docker/derp.der'
-    withEnv(["TAGVERSION=${context.tagversion}", "NEXUS_USERNAME=${context.nexusUsername}", "NEXUS_PASSWORD=${context.nexusPassword}", "NEXUS_HOST=${context.nexusHost}", "JAVA_OPTS=${javaOpts}","GRADLE_TEST_OPTS=${gradleTestOpts}","ENVIRONMENT=${springBootEnv}"]) {
+    withEnv(["TAGVERSION=${context.tagversion}", "NEXUS_HOST=${context.nexusHost}", "NEXUS_USERNAME=${context.nexusUsername}", "NEXUS_PASSWORD=${context.nexusPassword}", "JAVA_OPTS=${javaOpts}","GRADLE_TEST_OPTS=${gradleTestOpts}","ENVIRONMENT=${springBootEnv}"]) {
       def status = sh(script: "./gradlew clean build --stacktrace --no-daemon", returnStatus: true)
-      junit 'build/test-results/test/*.xml'
       if (status != 0) {
         error "Build failed!"
       }
