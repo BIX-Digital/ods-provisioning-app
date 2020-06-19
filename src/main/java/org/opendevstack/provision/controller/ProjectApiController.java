@@ -96,7 +96,7 @@ public class ProjectApiController {
   @Value("${provision.cleanup.incomplete.projects:true}")
   private boolean cleanupAllowed;
 
-  @Value("${" + CONFIG_PROVISION_ADD_PROJECT_CHECK_PRECONDITIONS + ":false}")
+  @Value("${" + CONFIG_PROVISION_ADD_PROJECT_CHECK_PRECONDITIONS + ":true}")
   private boolean checkPreconditionsEnabled;
 
   public ProjectApiController() {
@@ -117,9 +117,9 @@ public class ProjectApiController {
    */
   @RequestMapping(method = RequestMethod.POST)
   public ResponseEntity<Object> addProject(
-      @RequestBody OpenProjectData newProject,
       @RequestParam(ADD_PROJECT_PARAM_NAME_ONLY_CHECK_PRECONDITIONS)
           Optional<Boolean> onlyCheckPreconditions,
+      @RequestBody OpenProjectData newProject,
       @RequestHeader(value = "Content-Type", required = false) String contentType) {
 
     if (newProject == null
