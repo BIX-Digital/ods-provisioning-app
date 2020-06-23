@@ -10,4 +10,4 @@ RUN echo yes | $JAVA_HOME/bin/keytool -importcert -alias oc-root -keystore  $JAV
 
 EXPOSE 8080
 
-CMD ["java", "-jar", "app.jar", "--spring.config.location=file:/config/application.properties"]
+CMD ["java", "-jar", "app.jar", "--spring.config.additional-location=file:/config/application.properties"]
